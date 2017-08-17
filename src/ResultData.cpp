@@ -81,6 +81,12 @@ vcflib::Variant& Results::vcf(
     var.format.push_back("QR");
     var.format.push_back("AO");
     var.format.push_back("QA");
+    if (parameters.strandCounts) {
+      var.format.push_back("SAF");
+      var.format.push_back("SAR");
+      var.format.push_back("SRF");
+      var.format.push_back("SRR");
+    }
     // add GL/GLE later, when we know if we need to use one or the other
 
     unsigned int refBasesLeft = 0;
@@ -183,7 +189,7 @@ vcflib::Variant& Results::vcf(
         map<string, StrandBaseCounts> baseCountsBySample;
         for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
             GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
-            //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
+            // cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
             if (gc != comboMap.end()) {
                 Genotype* genotype = gc->second->genotype;
 
@@ -529,6 +535,14 @@ vcflib::Variant& Results::vcf(
                 sampleOutput["AO"].push_back(convert(sample.observationCount(altbase)));
                 sampleOutput["AD"].push_back(convert(sample.observationCount(altbase)));
                 sampleOutput["QA"].push_back(convert(sample.qualSum(altbase)));
+
+                if (parameters.strandCounts) {
+                  StrandBaseCounts baseCounts = sample.strandBaseCount(refbase, altbase);
+                  sampleOutput["SAF"].push_back(convert(baseCounts.forwardAlt));
+                  sampleOutput["SAR"].push_back(convert(baseCounts.reverseAlt));
+                  sampleOutput["SRF"].push_back(convert(baseCounts.forwardRef));
+                  sampleOutput["SRR"].push_back(convert(baseCounts.reverseRef));
+                }
             }
 
             if (outputAnyGenotypeLikelihoods && !parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {

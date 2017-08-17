@@ -23,7 +23,7 @@ void Parameters::simpleUsage(char ** argv) {
 }
 
 void Parameters::usage(char** argv) {
-    cout 
+    cout
         << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
         << endl
         << "Bayesian haplotype-based polymorphism discovery." << endl
@@ -163,6 +163,8 @@ void Parameters::usage(char** argv) {
         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
         << "                   filtering is generally recommended over the use of this parameter." << endl
+        << "   --strand-counts" << endl
+        << "                   Report SAF, SAR, SRF, and SRR for each sample" << endl
         << "   --strict-vcf" << endl
         << "                   Generate strict VCF format (FORMAT/GQ will be an int)" << endl
         << endl
@@ -403,6 +405,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
     strictVCF = false;
+    strandCounts = false;
     maxComplexGap = 3;
     //maxHaplotypeLength = 100;
     minRepeatSize = 5;
@@ -520,6 +523,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"theta", required_argument, 0, 'T'},
             {"pvar", required_argument, 0, 'P'},
             {"strict-vcf", no_argument, 0, '/'},
+            {"strand-counts", no_argument, 0, '*'},
             {"read-dependence-factor", required_argument, 0, 'D'},
             {"binomial-obs-priors-off", no_argument, 0, 'V'},
             {"allele-balance-priors-off", no_argument, 0, 'a'},
@@ -711,6 +715,10 @@ Parameters::Parameters(int argc, char** argv) {
 
         case '/':
             strictVCF = true;
+            break;
+
+        case '*':
+            strandCounts = true;
             break;
 
         case 'u':
@@ -1037,7 +1045,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
     case '#':
-        
+
         // --version
             cout << "version:  " << VERSION_GIT << endl;
         exit(0);
@@ -1047,7 +1055,7 @@ Parameters::Parameters(int argc, char** argv) {
             usage(argv);
             exit(0);
             break;
- 
+
             // either catch "long options" or
         case '?': // print a suggestion about the most-likely long option which the argument matches
         {
@@ -1074,7 +1082,7 @@ Parameters::Parameters(int argc, char** argv) {
         }
 
     }
- 
+
     // any remaining arguments are considered as bam files
     if (optind < argc) {
         if (useStdin) {

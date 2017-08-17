@@ -61,6 +61,7 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowComplex;           // -X --allow-complex
     bool strictVCF;
+    bool strandCounts;           // --strand-counts
     int maxComplexGap;
     //int maxHaplotypeLength;
     int minRepeatSize;

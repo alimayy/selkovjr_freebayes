@@ -85,7 +85,7 @@ void AlleleParser::openBams(void) {
         }
     }
 
-#else 
+#else
     if (parameters.useStdin) {
         if (!bamMultiReader.Open("-")) {
             ERROR("Could not read BAM data from stdin");
@@ -93,30 +93,30 @@ void AlleleParser::openBams(void) {
         }
     } else {
       for (std::vector<std::string>::const_iterator i = parameters.bams.begin();
-           i != parameters.bams.end(); ++i) 
+           i != parameters.bams.end(); ++i)
         if (!bamMultiReader.Open(*i)) {
-	  ERROR("Could not open input BAM file: " + *i);
-	  exit(1);
-	}
-	else {
-	  /*if (!bamMultiReader.LocateIndexes()) {
-                ERROR("Opened BAM reader without index file, jumping is disabled.");
-                cerr << bamMultiReader.GetErrorString() << endl;
-                if (!targets.empty()) {
-                    ERROR("Targets specified but no BAM index file provided.");
-                    ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
-                    ERROR("Please generate a BAM index file eithe, e.g.:");
-                    ERROR("    \% bamtools index -in <bam_file>");
-                    ERROR("    \% samtools index <bam_file>");
-                    exit(1);
-                }
-		}*/
+          ERROR("Could not open input BAM file: " + *i);
+          exit(1);
         }
-        /*if (!bamMultiReader.SetExplicitMergeOrder(bamMultiReader.MergeByCoordinate)) {
-            ERROR("could not set sort order to coordinate");
+        else {
+          /*if (!bamMultiReader.LocateIndexes()) {
+            ERROR("Opened BAM reader without index file, jumping is disabled.");
             cerr << bamMultiReader.GetErrorString() << endl;
+            if (!targets.empty()) {
+            ERROR("Targets specified but no BAM index file provided.");
+            ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
+            ERROR("Please generate a BAM index file eithe, e.g.:");
+            ERROR("    \% bamtools index -in <bam_file>");
+            ERROR("    \% samtools index <bam_file>");
             exit(1);
-	    }*/
+            }
+            }*/
+        }
+      /*if (!bamMultiReader.SetExplicitMergeOrder(bamMultiReader.MergeByCoordinate)) {
+        ERROR("could not set sort order to coordinate");
+        cerr << bamMultiReader.GetErrorString() << endl;
+        exit(1);
+        }*/
     }
 #endif
 
@@ -429,9 +429,9 @@ string AlleleParser::vcfHeader() {
         << "##reference=" << reference.filename << endl;
 
     for (REFVEC::const_iterator it = referenceSequences.begin();
-	 it != referenceSequences.end(); ++it)
+      it != referenceSequences.end(); ++it)
       headerss << "##contig=<ID=" << it->REFNAME << ",length=" << it->REFLEN << ">" << endl;
-    
+
     headerss
         << "##phasing=none" << endl
         << "##commandline=\"" << parameters.commandline << "\"" << endl
@@ -546,22 +546,27 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GQ,Number=1,Type=" << gqType << ",Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
-	//<< "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
+        //<< "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Number of observation for each allele\">" << endl
         << "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
         << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
         << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
-        << "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
-        //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
-        //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
-        //<< "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
-        //<< "##FORMAT=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl
+        << "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl;
+
+    if (parameters.strandCounts) {
+      headerss
+        << "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
+        << "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
+        << "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
+        << "##FORMAT=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl;
+    }
         //<< "##FORMAT=<ID=LR,Number=1,Type=Integer,Description=\"Number of reference observations placed left of the loci\">" << endl
         //<< "##FORMAT=<ID=LA,Number=1,Type=Integer,Description=\"Number of alternate observations placed left of the loci\">" << endl
         //<< "##FORMAT=<ID=ER,Number=1,Type=Integer,Description=\"Number of reference observations overlapping the loci in their '3 end\">" << endl
         //<< "##FORMAT=<ID=EA,Number=1,Type=Integer,Description=\"Number of alternate observations overlapping the loci in their '3 end\">" << endl
+    headerss
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
         << join(sampleList, "\t") << endl;
 
@@ -647,9 +652,9 @@ bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(BAMALIGN& alignme
     if (next.first != -1) {
         int varRefID = next.first;
         if (!hasMoreAlignments || varRefID < alignment.REFID || (varRefID == alignment.REFID && next.second < alignment.POSITION)) {
-	  return loadNextPositionWithInputVariant();
+          return loadNextPositionWithInputVariant();
         } else {
-	  loadReferenceSequence(alignment);
+          loadReferenceSequence(alignment);
         }
     } else {
       loadReferenceSequence(alignment);
@@ -673,7 +678,7 @@ bool AlleleParser::loadNextPositionWithInputVariant(void) {
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BAMALIGN& alignment) {
   loadReferenceSequence(referenceIDToName[alignment.REFID]);
-  currentPosition = alignment.POSITION; 
+  currentPosition = alignment.POSITION;
 }
 
 void AlleleParser::loadReferenceSequence(string& seqname) {
@@ -837,7 +842,7 @@ void AlleleParser::loadSampleCNVMap(void) {
             sampleCNV.setPloidy(referenceSampleName, r->REFNAME, 0, r->REFLEN, 1);
         }
     }
-    
+
 }
 
 int AlleleParser::currentSamplePloidy(string const& sample) {
@@ -1402,9 +1407,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
      *
      */
 
-    /*    std::cerr << "********" << std::endl 
-	      << alignment.QueryBases << std::endl
-	      << alignment.AlignedBases << std::endl;
+    /*    std::cerr << "********" << std::endl
+          << alignment.QueryBases << std::endl
+          << alignment.AlignedBases << std::endl;
     vector<CigarOp>::const_iterator cigarIter2 = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd2  = alignment.CigarData.end();
     for (; cigarIter2 != cigarEnd2; ++cigarIter2)
@@ -1418,7 +1423,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
         int l = cigarIter->CIGLEN;
         char t = cigarIter->CIGTYPE;
-	  DEBUG2("cigar item: " << t << l);
+        DEBUG2("cigar item: " << t << l);
 
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
@@ -1440,9 +1445,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                     cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
                          << alignment.QNAME << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
-		      //<< alignment.AlignedBases << endl
+                         //<< alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
-		    cerr << " RP " << rp << " " << rDna  <<" len " << rDna.length() <<  std::endl;
+                    cerr << " RP " << rp << " " << rDna  <<" len " << rDna.length() <<  std::endl;
                     abort();
                 }
 
@@ -1454,13 +1459,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                 try {
                     sb = currentSequence.at(csp);
                 } catch (std::out_of_range outOfRange) {
-		  cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
-                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
-		       << alignment.POSITION << "-" << alignment.ENDPOSITION << endl
-		    //<< "alignment: " << alignment.AlignedBases << endl
-		       << "currentSequence: " << currentSequence << endl
-		       << "currentSequence matching: " << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
-		  //abort();
+                  cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
+                    << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
+                    << alignment.POSITION << "-" << alignment.ENDPOSITION << endl
+                    //<< "alignment: " << alignment.AlignedBases << endl
+                    << "currentSequence: " << currentSequence << endl
+                    << "currentSequence matching: " << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
+                  //abort();
                     break;
                 }
 
@@ -1674,9 +1679,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
             // some aligners like to report deletions at the beginnings and ends of reads.
             // without any sequence in the read to support this, it is hard to believe
             // that these deletions are real, so we ignore them here.
-	      CIGAR cigar = alignment.GETCIGAR;
-	      if (cigarIter != cigar.begin()      // guard against deletion at beginning
-		  && (cigarIter+1) != cigar.end() // and against deletion at end
+            CIGAR cigar = alignment.GETCIGAR;
+            if (cigarIter != cigar.begin()      // guard against deletion at beginning
+                && (cigarIter+1) != cigar.end() // and against deletion at end
                 && allATGC(refseq)) {
                 string nullstr;
                 ra.addAllele(
@@ -1960,11 +1965,11 @@ void AlleleParser::updateAlignmentQueue(long int position,
             DEBUG("alignment: " << currentAlignment.QNAME);
             // get read group, and map back to a sample name
             string readGroup;
-#ifdef HAVE_BAMTOOLS	    
+#ifdef HAVE_BAMTOOLS
             if (!currentAlignment.GetTag("RG", readGroup)) {
 #else
-	      currentAlignment.GetZTag("RG", readGroup);
-	    if (readGroup.empty()) {
+              currentAlignment.GetZTag("RG", readGroup);
+              if (readGroup.empty()) {
 #endif
                 if (!oneSampleAnalysis) {
                     ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
@@ -2018,9 +2023,9 @@ void AlleleParser::updateAlignmentQueue(long int position,
             }
 
             if (!gettingPartials && currentAlignment.ENDPOSITION < position) {
-	      cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
-		   << " expected after " << position << endl;
-	      continue;
+              cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
+                << " expected after " << position << endl;
+              continue;
             }
 
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
@@ -2070,8 +2075,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                         newAlleles.push_back(&*allele);
                     }
                 }
-	      }
-	    } while ((hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment))
+            }
+        } while ((hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment))
                  && currentAlignment.POSITION <= position
                  && currentAlignment.REFID == currentRefID);
     }
@@ -2672,10 +2677,10 @@ bool AlleleParser::getFirstAlignment(void) {
       hasAlignments = false;
     } else {
       while (!currentAlignment.ISMAPPED) {
-	if (!GETNEXT(bamMultiReader, currentAlignment)) { 
-	  hasAlignments = false;
-	  break;
-	}
+        if (!GETNEXT(bamMultiReader, currentAlignment)) {
+          hasAlignments = false;
+          break;
+        }
       }
     }
 
@@ -2760,7 +2765,7 @@ bool AlleleParser::toNextPosition(void) {
         // here we loop over unaligned reads at the beginning of a target
         // we need to get to a mapped read to figure out where we are
       while (hasMoreAlignments && !currentAlignment.ISMAPPED) {
-	hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment);
+        hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment);
     }
         // determine if we have more alignments or not
         if (!hasMoreAlignments) {
@@ -3149,7 +3154,7 @@ void AlleleParser::buildHaplotypeAlleles(
                 for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
                     RegisteredAlignment& ra = *r;
                     if ((ra.start > currentPosition && ra.start < currentPosition + haplotypeLength)
-			 || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
+                        || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
                         Allele* aptr;
                         bool allowPartials = true;
                         ra.fitHaplotype(currentPosition, haplotypeLength, aptr, allowPartials);
@@ -3516,7 +3521,7 @@ void AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplo
         for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
             RegisteredAlignment& ra = *r;
             if ((ra.start > currentPosition && ra.start < currentPosition + haplotypeLength)
-		 || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
+                || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
                 Allele* aptr;
                 bool allowPartials = true;
                 ra.fitHaplotype(currentPosition, haplotypeLength, aptr, allowPartials);
