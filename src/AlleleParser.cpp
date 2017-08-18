@@ -557,10 +557,10 @@ string AlleleParser::vcfHeader() {
 
     if (parameters.strandCounts) {
       headerss
-        << "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
-        << "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
-        << "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
-        << "##FORMAT=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl;
+        << "##FORMAT=<ID=SRF,Number=A,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
+        << "##FORMAT=<ID=SRR,Number=A,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
+        << "##FORMAT=<ID=SAF,Number=A,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
+        << "##FORMAT=<ID=SAR,Number=A,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl;
     }
         //<< "##FORMAT=<ID=LR,Number=1,Type=Integer,Description=\"Number of reference observations placed left of the loci\">" << endl
         //<< "##FORMAT=<ID=LA,Number=1,Type=Integer,Description=\"Number of alternate observations placed left of the loci\">" << endl
