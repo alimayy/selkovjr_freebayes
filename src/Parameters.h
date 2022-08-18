@@ -1,5 +1,5 @@
-#ifndef _PARAMETERS_H
-#define _PARAMETERS_H
+#ifndef FREEBAYES_PARAMETERS_H
+#define FREEBAYES_PARAMETERS_H
 
 #include <cstdio>
 #include <iostream>
@@ -37,6 +37,7 @@ public:
     string outputFile;
     bool gVCFout;    // -l --gvcf
     int gVCFchunk;
+    bool gVCFNoChunk;
     string variantPriorsFile;
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;
@@ -120,7 +121,9 @@ public:
     int minAltCount;             // -C --min-alternate-count
     int minAltTotal;             // -G --min-alternate-total
     int minCoverage;             // -! --min-coverage
-    int maxCoverage;             // -+ --max-coverage
+    int limitCoverage;           // -+ --limit-coverage
+    int skipCoverage;            // -g --skip-coverage
+    int trimComplexTail;         // -. --trim-complex-tail
     int debuglevel;              // -d --debug increments
     bool debug; // set if debuglevel >=1
     bool debug2; // set if debuglevel >=2

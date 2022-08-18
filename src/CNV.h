@@ -1,5 +1,5 @@
-#ifndef __CNV_H
-#define __CNV_H
+#ifndef FREEBAYES_CNV_H
+#define FREEBAYES_CNV_H
 
 #include <map>
 #include <string>
@@ -8,11 +8,13 @@
 #include <vector>
 #include <utility>
 #include <stdlib.h>
+#include <algorithm>
+#include <tuple>
 #include "split.h"
 
 using namespace std;
 
-typedef map<string, map<string, map<pair<long int, long int>, int> > > SampleSeqCNVMap;
+typedef map<string, map<string, vector<tuple<long int, long int, int> > > > SampleSeqCNVMap;
 
 class CNVMap {
 

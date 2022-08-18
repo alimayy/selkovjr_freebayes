@@ -13,24 +13,20 @@ void Parameters::simpleUsage(char ** argv) {
         << endl
         << "   -h --help       For a complete description of options." << endl
         << endl
+        << "freebayes is maintained by Erik Garrison and Pjotr Prins." << endl
+        << endl
         << "citation: Erik Garrison, Gabor Marth" << endl
         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
 
 void Parameters::usage(char** argv) {
-    cout 
-        << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
-        << endl
-        << "Bayesian haplotype-based polymorphism discovery." << endl
-        << endl
-        << "citation: Erik Garrison, Gabor Marth" << endl
-        << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
-        << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
+    simpleUsage(argv);
+    cout
         << endl
         << "overview:" << endl
         << endl
@@ -72,6 +68,9 @@ void Parameters::usage(char** argv) {
         << "    # require at least 5 supporting observations to consider a variant" << endl
         << "    freebayes -f ref.fa -C 5 aln.bam >var.vcf" << endl
         << endl
+        << "    # discard alignments overlapping positions where total read depth is greater than 200" << endl
+        << "    freebayes -f ref.fa -g 200 aln.bam >var.vcf" << endl
+        << endl
         << "    # use a different ploidy" << endl
         << "    freebayes -f ref.fa -p 4 aln.bam >var.vcf" << endl
         << endl
@@ -90,7 +89,7 @@ void Parameters::usage(char** argv) {
         << endl
         << "    # naive variant calling: simply annotate observation counts of SNPs and indels" << endl
         << "    freebayes -f ref.fa --haplotype-length 0 --min-alternate-count 1 \\ " << endl
-        << "        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic >var.vcf" << endl
+        << "        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic aln.bam >var.vcf" << endl
         << endl
         << endl
         << "parameters:" << endl
@@ -126,11 +125,12 @@ void Parameters::usage(char** argv) {
         << "   -A --cnv-map FILE" << endl
         << "                   Read a copy number map from the BED file FILE, which has" << endl
         << "                   either a sample-level ploidy:" << endl
-        << "                      sample name, copy number" << endl
+        << "                      sample_name copy_number" << endl
         << "                   or a region-specific format:" << endl
-        << "                      reference sequence, start, end, sample name, copy number" << endl
+        << "                      seq_name start end sample_name copy_number" << endl
         << "                   ... for each region in each sample which does not have the" << endl
-        << "                   default copy number as set by --ploidy." << endl
+        << "                   default copy number as set by --ploidy. These fields can be delimited" << endl
+        << "                   by space or tab." << endl
         << endl
         << "output:" << endl
         << endl
@@ -139,6 +139,10 @@ void Parameters::usage(char** argv) {
         << "                   Write gVCF output, which indicates coverage in uncalled regions." << endl
         << "   --gvcf-chunk NUM" << endl
         << "                   When writing gVCF output emit a record for every NUM bases." << endl
+        << "   -& --gvcf-dont-use-chunk BOOL " << endl
+        << "                   When writing the gVCF output emit a record for all bases if" << endl
+        << "                   set to \"true\" , will also route an int to --gvcf-chunk" << endl
+        << "                   similar to --output-mode EMIT_ALL_SITES from GATK" << endl
         << "   -@ --variant-input VCF" << endl
         << "                   Use variants reported in VCF file as input to the algorithm." << endl
         << "                   Variants in this file will included in the output even if" << endl
@@ -194,10 +198,6 @@ void Parameters::usage(char** argv) {
         << endl
         << "allele scope:" << endl
         << endl
-        << "   -I --no-snps    Ignore SNP alleles." << endl
-        << "   -i --no-indels  Ignore insertion and deletion alleles." << endl
-        << "   -X --no-mnps    Ignore multi-nuceotide polymorphisms, MNPs." << endl
-        << "   -u --no-complex Ignore complex events (composites of other classes)." << endl
         << "   -n --use-best-n-alleles N" << endl
         << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
         << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
@@ -210,11 +210,28 @@ void Parameters::usage(char** argv) {
         << "                   length at least this many bp.  (default: 5)" << endl
         << "   --min-repeat-entropy N" << endl
         << "                   To detect interrupted repeats, build across sequence until it has" << endl
-        << "                   entropy > N bits per bp.  (default: 0, off)" << endl
+        << "                   entropy > N bits per bp. Set to 0 to turn off. (default: 1)" << endl
         << "   --no-partial-observations" << endl
         << "                   Exclude observations which do not fully span the dynamically-determined" << endl
         << "                   detection window.  (default, use all observations, dividing partial" << endl
         << "                   support across matching haplotypes when generating haplotypes.)" << endl
+        << endl
+        << "  These flags are meant for testing." << endl
+        << "  They are not meant for filtering the output." << endl
+        << "  They actually filter the input to the algorithm by throwing away alignments." << endl
+        << "  This hurts performance by hiding information from the Bayesian model." << endl
+        << "  Do not use them unless you can validate that they improve results!" << endl
+        << endl
+        << "   -I --throw-away-snp-obs     Remove SNP observations from input." << endl
+        << "   -i --throw-away-indels-obs  Remove indel observations from input." << endl
+        << "   -X --throw-away-mnp-obs     Remove MNP observations from input." << endl
+        << "   -u --throw-away-complex-obs Remove complex allele observations from input." << endl
+        << endl
+        << "  If you need to break apart haplotype calls to obtain one class of alleles," << endl
+        << "  run the call with default parameters, then normalize and subset the VCF:" << endl
+        << "    freebayes ... | vcfallelicprimitives -kg >calls.vcf" << endl
+        << "  For example, this would retain only biallelic SNPs." << endl
+        << "    <calls.vcf vcfsnps | vcfbiallelic >biallelic_snp_calls.vcf" << endl
         << endl
         << "indel realignment:" << endl
         << endl
@@ -261,7 +278,7 @@ void Parameters::usage(char** argv) {
         << "   -F --min-alternate-fraction N" << endl
         << "                   Require at least this fraction of observations supporting" << endl
         << "                   an alternate allele within a single individual in the" << endl
-        << "                   in order to evaluate the position.  default: 0.2" << endl
+        << "                   in order to evaluate the position.  default: 0.05" << endl
         << "   -C --min-alternate-count N" << endl
         << "                   Require at least this count of observations supporting" << endl
         << "                   an alternate allele within a single individual in order" << endl
@@ -276,8 +293,15 @@ void Parameters::usage(char** argv) {
         << "                   to use the allele in analysis.  default: 1" << endl
         << "   --min-coverage N" << endl
         << "                   Require at least this coverage to process a site. default: 0" << endl
-        << "   --max-coverage N" << endl
-        << "                   Do not process sites with greater than this coverage. default: no limit" << endl
+        << "   --limit-coverage N" << endl
+        << "                   Downsample per-sample coverage to this level if greater than this coverage." << endl
+        << "                   default: no limit" << endl
+        << "   -g --skip-coverage N" << endl
+        << "                   Skip processing of alignments overlapping positions with coverage >N." << endl
+        << "                   This filters sites above this coverage, but will also reduce data nearby." << endl
+        << "                   default: no limit" << endl
+        << "   --trim-complex-tail" << endl
+        << "                   Trim complex tails." << endl
         << endl
         << "population priors:" << endl
         << endl
@@ -355,7 +379,7 @@ void Parameters::usage(char** argv) {
         << "   -dd             Print more verbose debugging output (requires \"make DEBUG\")" << endl
         << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
@@ -388,6 +412,7 @@ Parameters::Parameters(int argc, char** argv) {
     outputFile = "";
     gVCFout = false;
     gVCFchunk = 0;
+    gVCFNoChunk = false;         // --gvcf-no-chunk sets this to true
     alleleObservationBiasFile = "";
 
     // operation parameters
@@ -406,7 +431,7 @@ Parameters::Parameters(int argc, char** argv) {
     maxComplexGap = 3;
     //maxHaplotypeLength = 100;
     minRepeatSize = 5;
-    minRepeatEntropy = 0;
+    minRepeatEntropy = 1;
     usePartialObservations = true;
     pooledDiscrete = false;                 // -J --pooled
     pooledContinuous = false;
@@ -453,7 +478,7 @@ Parameters::Parameters(int argc, char** argv) {
     TB = 3;
     posteriorIntegrationDepth = 0;
     calculateMarginals = false;
-    minAltFraction = 0.2;  // require 20% of reads from sample to be supporting the same alternate to consider
+    minAltFraction = 0.05;  // require 5% of reads from sample to be supporting the same alternate to consider
     minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
     minAltQSum = 0;
@@ -461,7 +486,9 @@ Parameters::Parameters(int argc, char** argv) {
     probContamination = 10e-9;
     //minAltQSumTotal = 0;
     minCoverage = 0;
-    maxCoverage = 0;
+    limitCoverage = 0;
+    skipCoverage = 0;
+    trimComplexTail = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -470,7 +497,7 @@ Parameters::Parameters(int argc, char** argv) {
 
     int c; // counter for getopt
 
-    static struct option long_options[] =
+    static const struct option long_options[] =
         {
             {"help", no_argument, 0, 'h'},
             {"version", no_argument, 0, '#'},
@@ -486,6 +513,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"vcf", required_argument, 0, 'v'},
             {"gvcf", no_argument, 0, '8'},
             {"gvcf-chunk", required_argument, 0, '&'},
+            {"gvcf-dont-use-chunk", required_argument, 0 , '&'},
             {"use-duplicate-reads", no_argument, 0, '4'},
             {"no-partial-observations", no_argument, 0, '['},
             {"use-best-n-alleles", required_argument, 0, 'n'},
@@ -507,15 +535,15 @@ Parameters::Parameters(int argc, char** argv) {
             {"read-max-mismatch-fraction", required_argument, 0, 'z'},
             {"read-snp-limit", required_argument, 0, '$'},
             {"read-indel-limit", required_argument, 0, 'e'},
-            {"no-indels", no_argument, 0, 'i'},
+            {"throw-away-indel-obs", no_argument, 0, 'i'},
             {"dont-left-align-indels", no_argument, 0, 'O'},
-            {"no-mnps", no_argument, 0, 'X'},
-            {"no-complex", no_argument, 0, 'u'},
+            {"throw-away-mnps-obs", no_argument, 0, 'X'},
+            {"throw-away-complex-obs", no_argument, 0, 'u'},
             {"max-complex-gap", required_argument, 0, 'E'},
             {"haplotype-length", required_argument, 0, 'E'},
             {"min-repeat-size", required_argument, 0, 'E'},
             {"min-repeat-entropy", required_argument, 0, 'E'},
-            {"no-snps", no_argument, 0, 'I'},
+            {"throw-away-snp-obs", no_argument, 0, 'I'},
             {"indel-exclusion-window", required_argument, 0, 'x'},
             {"theta", required_argument, 0, 'T'},
             {"pvar", required_argument, 0, 'P'},
@@ -533,7 +561,9 @@ Parameters::Parameters(int argc, char** argv) {
             //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
-            {"max-coverage", required_argument, 0, '+'},
+            {"limit-coverage", required_argument, 0, '+'},
+            {"skip-coverage", required_argument, 0, 'g'},
+            {"trim-complex-tail", no_argument, 0, ']'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -559,7 +589,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:g:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -635,8 +665,16 @@ Parameters::Parameters(int argc, char** argv) {
             gVCFout = true;
             break;
 
+            // -& BOOL/INT --gvcf-no-chunk BOOL/INT  --gvcf-chunk
         case '&':
-            gVCFchunk = atoi(optarg);
+            //cerr << "optarg:\t" << optarg << endl;
+            if(optarg[0] == 't'){
+                gVCFNoChunk = true;
+            } else if (optarg[0] == 'f'){
+                gVCFNoChunk = false;
+            } else {
+                gVCFchunk = atoi(optarg);
+            }
             break;
 
             // -4 --use-duplicate-reads
@@ -668,12 +706,25 @@ Parameters::Parameters(int argc, char** argv) {
             }
             break;
 
-            // -+ --max-coverage
+            // -+ --limit-coverage
         case '+':
-            if (!convert(optarg, maxCoverage)) {
-                cerr << "could not parse max-coverage" << endl;
+            if (!convert(optarg, limitCoverage)) {
+                cerr << "could not parse limit-coverage" << endl;
                 exit(1);
             }
+            break;
+
+            // -g --skip-coverage
+        case 'g':
+            if (!convert(optarg, skipCoverage)) {
+                cerr << "could not parse skip-coverage" << endl;
+                exit(1);
+            }
+            break;
+
+            // --trim-complex-tail
+        case ']':
+            trimComplexTail = true;
             break;
 
             // -n --use-best-n-alleles
@@ -1037,7 +1088,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
     case '#':
-        
+
         // --version
             cout << "version:  " << VERSION_GIT << endl;
         exit(0);
@@ -1047,13 +1098,13 @@ Parameters::Parameters(int argc, char** argv) {
             usage(argv);
             exit(0);
             break;
- 
+
             // either catch "long options" or
         case '?': // print a suggestion about the most-likely long option which the argument matches
         {
             string bad_arg(argv[optind - 1]);
-            option* opt = &long_options[0];
-            option* closest_opt = opt;
+            const option* opt = &long_options[0];
+            const option* closest_opt = opt;
             int shortest_distance = levenshteinDistance(opt->name, bad_arg);
             ++opt;
             while (opt->name != 0) {
@@ -1074,7 +1125,7 @@ Parameters::Parameters(int argc, char** argv) {
         }
 
     }
- 
+
     // any remaining arguments are considered as bam files
     if (optind < argc) {
         if (useStdin) {

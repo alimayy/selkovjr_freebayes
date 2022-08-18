@@ -22,7 +22,6 @@
 #ifdef HAVE_BAMTOOLS
 #include "api/BamReader.h"
 #endif
-#include "Fasta.h"
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"
@@ -42,24 +41,7 @@
 #include "Bias.h"
 #include "Contamination.h"
 #include "NonCall.h"
-
-
-// local helper debugging macros to improve code readability
-#define DEBUG(msg) \
-     if (parameters.debug) { cerr << msg << endl; }
-
-// lower-priority messages
-#ifdef VERBOSE_DEBUG
-#define DEBUG2(msg) \
-    if (parameters.debug2) { cerr << msg << endl; }
-#else
-#define DEBUG2(msg)
-#endif
-
-// must-see error messages
-#define ERROR(msg) \
-    cerr << msg << endl;
-
+#include "Logging.h"
 
 using namespace std;
 
@@ -123,7 +105,7 @@ int main (int argc, char *argv[]) {
         out << parser->variantCallFile.header << endl;
     }
 
-    if (0 < parameters.maxCoverage) {
+    if (0 < parameters.limitCoverage) {
         srand(13);
     }
 
@@ -137,24 +119,28 @@ int main (int argc, char *argv[]) {
         ++total_sites;
 
         DEBUG2("at start of main loop");
-
-        // did we switch chromosomes or exceed our gVCF chunk size?
+        
+        // did we switch chromosomes or exceed our gVCF chunk size, or do we not want to use chunks?
         // if so, we may need to output a gVCF record
         Results results;
-        if (parameters.gVCFout && !nonCalls.empty() &&
-            ( nonCalls.begin()->first != parser->currentSequenceName
-              || (parameters.gVCFchunk &&
-                  nonCalls.lastPos().second - nonCalls.firstPos().second
-                  > parameters.gVCFchunk))) {
+        if (parameters.gVCFout 
+               &&  !(nonCalls.empty()) 
+               &&  (  (parameters.gVCFNoChunk)
+                   || (nonCalls.begin()->first != parser->currentSequenceName)
+                   || (parameters.gVCFchunk 
+                       && nonCalls.lastPos().second - nonCalls.firstPos().second >= parameters.gVCFchunk
+                      )
+                  )
+            ){
             vcflib::Variant var(parser->variantCallFile);
             out << results.gvcf(var, nonCalls, parser) << endl;
             nonCalls.clear();
         }
 
-        // don't process non-ATGC's in the reference
+        // don't process non-ATGCN's in the reference
         string cb = parser->currentReferenceBaseString();
-        if (cb != "A" && cb != "T" && cb != "C" && cb != "G") {
-            DEBUG2("current reference base is N");
+        if (cb != "A" && cb != "T" && cb != "C" && cb != "G" && cb != "N") {
+            DEBUG2("current reference base is not in { A T G C N }");
             continue;
         }
 
@@ -174,7 +160,7 @@ int main (int argc, char *argv[]) {
             } else if (parameters.onlyUseInputAlleles) {
                 DEBUG("no input alleles, but using only input alleles for analysis, skipping position");
                 skip = true;
-            } else if (0 < parameters.maxCoverage) {
+            } else if (0 < parameters.limitCoverage) {
                 // go through each sample
                 for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
                     string sampleName = s->first;
@@ -184,14 +170,14 @@ int main (int argc, char *argv[]) {
                     for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
                         sampleCoverage += sg->second.size();
                     }
-                    if (sampleCoverage <= parameters.maxCoverage) {
+                    if (sampleCoverage <= parameters.limitCoverage) {
                         continue;
                     }
 
-                    DEBUG("coverage " << sampleCoverage << " for sample " << sampleName << " was > " << parameters.maxCoverage << ", so we will remove " << (sampleCoverage - parameters.maxCoverage) << " genotypes");
+                    DEBUG("coverage " << sampleCoverage << " for sample " << sampleName << " was > " << parameters.limitCoverage << ", so we will remove " << (sampleCoverage - parameters.limitCoverage) << " genotypes");
                     vector<string> genotypesToErase;
                     do {
-                        double probRemove = (sampleCoverage - parameters.maxCoverage) / (double)sampleCoverage;
+                        double probRemove = (sampleCoverage - parameters.limitCoverage) / (double)sampleCoverage;
                         vector<string> genotypesToErase;
                         // iterate through the genotypes
                         for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
@@ -199,7 +185,7 @@ int main (int argc, char *argv[]) {
                             // iterate through each allele
                             for (int alleleIndex = 0; alleleIndex < sg->second.size(); alleleIndex++) {
                                 // only if we have more alleles to remove
-                                if (parameters.maxCoverage < sampleCoverage) {
+                                if (parameters.limitCoverage < sampleCoverage) {
                                     double r = rand() / (double)RAND_MAX;
                                     if (r < probRemove) { // skip over this allele
                                         sampleCoverage--;
@@ -222,7 +208,7 @@ int main (int argc, char *argv[]) {
                         for (vector<string>::iterator gt = genotypesToErase.begin(); gt != genotypesToErase.end(); ++gt) {
                             sample.erase(*gt);
                         }
-                    } while (parameters.maxCoverage < sampleCoverage);
+                    } while (parameters.limitCoverage < sampleCoverage);
                     sampleCoverage = 0;
                     for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
                         sampleCoverage += sg->second.size();
@@ -696,7 +682,8 @@ int main (int argc, char *argv[]) {
     }
 
     // write the last gVCF record
-    if (parameters.gVCFout && !nonCalls.empty()) {
+    // NOTE: for some resion this is only needed if we are using gVCF chunks, if minimal chunking it is not requird, in fact it breaks....
+    if (parameters.gVCFout && !nonCalls.empty() && !parameters.gVCFNoChunk) {
         Results results;
         vcflib::Variant var(parser->variantCallFile);
         out << results.gvcf(var, nonCalls, parser) << endl;

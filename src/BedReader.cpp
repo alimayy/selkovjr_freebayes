@@ -1,6 +1,3 @@
-#ifndef BEDREADER_CPP
-#define BEDREADER_CPP
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -13,6 +10,7 @@
 #include "split.h"
 #include "Utility.h"
 #include "BedReader.h"
+#include "Logging.h"
 #include "../intervaltree/IntervalTree.h"
 
 using namespace std;
@@ -33,6 +31,9 @@ vector<BedTarget> BedReader::entries(void) {
         // coordinates used internally should be in the latter, and coordinates
         // from the user in the former should be converted immediately to the
         // internal format.
+        if (line.at(0)=='#'){
+            continue;
+        }
         vector<string> fields = split(line, " \t");
         BedTarget entry(strip(fields[0]),
                         atoi(strip(fields[1]).c_str()),
@@ -46,35 +47,29 @@ vector<BedTarget> BedReader::entries(void) {
 }
 
 bool BedReader::targetsContained(string& seq, long left, long right) {
-    vector<Interval<BedTarget*> > results;
-    intervals[seq].findContained(left, right, results);
+    vector<Interval<int, BedTarget*> > results = intervals[seq].findContained(left, right);
     return !results.empty();
 }
 
 bool BedReader::targetsOverlap(string& seq, long left, long right) {
-    vector<Interval<BedTarget*> > results;
-    intervals[seq].findOverlapping(left, right, results);
+    vector<Interval<int, BedTarget*> > results = intervals[seq].findOverlapping(left, right);
     return !results.empty();
 }
 
 vector<BedTarget*> BedReader::targetsContaining(BedTarget& target) {
-    vector<Interval<BedTarget*> > results;
-    intervals[target.seq].findContained(target.left, target.right, results);
+    vector<Interval<int, BedTarget*> > results = intervals[target.seq].findContained(target.left, target.right);
     vector<BedTarget*> contained;
-    for (vector<Interval<BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
+    for (vector<Interval<int, BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
         contained.push_back(r->value);
     }
     return contained;
 }
 
 vector<BedTarget*> BedReader::targetsOverlapping(BedTarget& target) {
-    vector<Interval<BedTarget*> > results;
-    intervals[target.seq].findOverlapping(target.left, target.right, results);
+    vector<Interval<int, BedTarget*> > results = intervals[target.seq].findOverlapping(target.left, target.right);
     vector<BedTarget*> overlapping;
-    for (vector<Interval<BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
+    for (vector<Interval<int, BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
         overlapping.push_back(r->value);
     }
     return overlapping;
 }
-
-#endif

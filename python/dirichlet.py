@@ -1,11 +1,21 @@
+#!/usr/bin/env python3
+
 from scipy.special import gamma, gammaln
 import operator
 import math
 from logsumexp import logsumexp
 from factorialln import factorialln
 
-def product(l):
-    return reduce(operator.mul, l)
+def fold(func, iterable, initial=None, reverse=False):
+    x=initial
+    if reverse:
+        iterable=reversed(iterable)
+    for e in iterable:
+        x=func(x,e) if x is not None else e
+    return x
+
+def product(listy):
+    return fold(operator.mul, listy)
 
 def beta(alphas):
     """Multivariate beta function"""
@@ -28,7 +38,7 @@ def dirichlet_maximum_likelihood_ratio(probs, obs, s=1):
     return dirichlet(probs, obs, s) / float(maximum_likelihood)
 
 def multinomial(probs, obs):
-    return math.factorial(sum(obs)) / product(map(math.factorial, obs)) * product([math.pow(p, x) for p,x in zip(probs, obs)])
+    return math.factorial(sum(obs)) / product(list(map(math.factorial, obs))) * product([math.pow(p, x) for p,x in zip(probs, obs)])
 
 def multinomialln(probs, obs):
     return factorialln(sum(obs)) - sum(map(factorialln, obs)) + sum([math.log(math.pow(p, x)) for p,x in zip(probs, obs)])

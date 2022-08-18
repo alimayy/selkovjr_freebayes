@@ -1,5 +1,5 @@
-#ifndef _ALLELE_PARSER_H
-#define _ALLELE_PARSER_H
+#ifndef FREEBAYES_ALLELEPARSER_H
+#define FREEBAYES_ALLELEPARSER_H
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <cmath>
 #include "split.h"
+#include <list> // XXX workaround for a missing include in vcflib's join.h
 #include "join.h"
 
 #include "BedReader.h"
@@ -21,7 +22,7 @@
 #include "Utility.h"
 #include "Allele.h"
 #include "Sample.h"
-#include "Fasta.h"
+#include "FBFasta.h"
 #include "TryCatch.h"
 
 #include "Genotype.h"
@@ -57,10 +58,8 @@ public:
     int snpCount;
     int indelCount;
     int alleleTypes;
-    Parameters parameters;
 
-    RegisteredAlignment(BAMALIGN& alignment, Parameters parameters)
-        //: alignment(alignment)
+    RegisteredAlignment(BAMALIGN& alignment)
         : start(alignment.POSITION)
         , end(alignment.ENDPOSITION)
         , refid(alignment.REFID)
@@ -69,7 +68,6 @@ public:
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
-        , parameters(parameters)
     {
       FILLREADGROUP(readgroup, alignment);
     }
@@ -144,7 +142,7 @@ public:
     CNVMap sampleCNV;
 
     // reference
-    FastaReference reference;
+    FB::FastaReference reference;
     vector<string> referenceSequenceNames;
     map<int, string> referenceIDToName;
     string referenceSampleName;
@@ -179,22 +177,25 @@ public:
     bool allowedHaplotypeBasisAllele(long int pos, string& ref, string& alt);
 
     Allele makeAllele(RegisteredAlignment& ra,
-		      AlleleType type,
-		      long int pos,
-		      int length,
-		      int basesLeft,
-		      int basesRight,
-		      string& readSequence,
-		      string& sampleName,
-		      BAMALIGN& alignment,
-		      string& sequencingTech,
-		      long double qual,
-		      string& qualstr);
+                      AlleleType type,
+                      long int pos,
+                      long int endpos,
+                      int length,
+                      int basesLeft,
+                      int basesRight,
+                      string& readSequence,
+                      string& sampleName,
+                      BAMALIGN& alignment,
+                      string& sequencingTech,
+                      long double qual,
+                      string& qualstr);
 
 
 
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
+    set<long unsigned int> coverageSkippedPositions;
+    map<long unsigned int, long unsigned int> coverage;
     map<int, map<long int, vector<Allele> > > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     pair<int, long int> nextInputVariantPosition(void);
     void getInputVariantsInRegion(string& seq, long start = 0, long end = 0);
@@ -250,7 +251,9 @@ public:
     void removeNonOverlappingAlleles(vector<Allele*>& alleles,
                                      int haplotypeLength = 1,
                                      bool getAllAllelesInHaplotype = false);
-    void removePreviousAlleles(vector<Allele*>& alleles);
+    void removePreviousAlleles(vector<Allele*>& alleles, long int position);
+    void removeCoverageSkippedAlleles(vector<Allele*>& alleles, long int position);
+    void removeRegisteredAlignmentsOverlappingPosition(long unsigned int pos);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void removeDuplicateAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups,
                                 int allowedAlleleTypes, int haplotypeLength, Allele& refallele);

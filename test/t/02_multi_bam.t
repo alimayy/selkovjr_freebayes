@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+cd ../test
+
+root=$(dirname $0)/../..
+
 BASH_TAP_ROOT=bash-tap
 source ./bash-tap/bash-tap-bootstrap
 
-PATH=../bin:$PATH # for freebayes
+PATH=../build:$root/build:$root/../build:$root/bin:$PATH
 
 plan tests 7
 

@@ -1,6 +1,3 @@
-[submodule "bamtools"]
-	path = bamtools
-	url = https://github.com/ekg/bamtools.git
 [submodule "intervaltree"]
 	path = intervaltree
 	url = https://github.com/ekg/intervaltree.git
@@ -13,6 +10,6 @@
 [submodule "vcflib"]
 	path = vcflib
 	url = https://github.com/vcflib/vcflib.git
-[submodule "SeqLib"]
-	path = SeqLib
-	url = https://github.com/walaj/SeqLib.git
+[submodule "contrib/htslib"]
+	path = contrib/htslib
+	url = https://github.com/samtools/htslib.git

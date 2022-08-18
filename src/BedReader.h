@@ -1,5 +1,5 @@
-#ifndef BEDREADER_H
-#define BEDREADER_H
+#ifndef FREEBAYES_BEDREADER_H
+#define FREEBAYES_BEDREADER_H
 
 #include <iostream>
 #include <fstream>
@@ -38,7 +38,7 @@ class BedReader : public ifstream {
 
 public:
     vector<BedTarget> targets;
-    map<string, IntervalTree<BedTarget*> > intervals; // intervals by reference sequence
+    map<string, IntervalTree<int, BedTarget*> > intervals; // intervals by reference sequence
 
     vector<BedTarget> entries(void);
 
@@ -60,16 +60,15 @@ public:
     }
 
     void buildIntervals(void) {
-        map<string, vector<Interval<BedTarget*> > > intervalsBySeq;
+        map<string, IntervalTree<int, BedTarget*>::interval_vector> intervalsBySeq;
         for (vector<BedTarget>::iterator t = targets.begin(); t != targets.end(); ++t) {
-            intervalsBySeq[t->seq].push_back(Interval<BedTarget*>(t->left, t->right, &*t));
+            intervalsBySeq[t->seq].push_back(Interval<int, BedTarget*>(t->left, t->right, &*t));
         }
-        for (map<string, vector<Interval<BedTarget*> > >::iterator s = intervalsBySeq.begin(); s != intervalsBySeq.end(); ++s) {
-            intervals[s->first] = IntervalTree<BedTarget*>(s->second);
+        for (map<string, IntervalTree<int, BedTarget*>::interval_vector>::const_iterator s = intervalsBySeq.begin(); s != intervalsBySeq.end(); ++s) {
+            intervals[s->first] = IntervalTree<int, BedTarget*>((IntervalTree<int, BedTarget*>::interval_vector&&)s->second);
         }
     }
 
 };
 
 #endif
-
